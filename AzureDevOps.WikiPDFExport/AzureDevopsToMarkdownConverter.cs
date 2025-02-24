@@ -13,11 +13,6 @@ namespace azuredevops_export_wiki
         // Format: #headline
         private const string HeadlinePattern = @"^(#+)(?!\d+|$|#)([^\s])(.*)$";
 
-        // Regex pattern to find all work items. Looks for # followed by a number.  
-        // Format: (#12345) 
-        private const string WorkItemPattern = @"#\d+";
-
-
         /// <summary>
         /// Preprocesses the markdown content to ensure consistency by:
         /// - Converting Azure DevOps-specific syntax to standard markdown.
@@ -46,7 +41,9 @@ namespace azuredevops_export_wiki
                 // Checks if the line is inside a code block.
                 if (line.Trim().StartsWith("```"))
                 {
+                    processedLines.Add(line); // Adds the line with no <br> Tag
                     isInCodeBlock = !isInCodeBlock;
+                    continue; // Exits the loop to prevent adding a <br> tag to the last line of a code block
                 }
 
                 // Checks if the line is inside a table
@@ -61,21 +58,19 @@ namespace azuredevops_export_wiki
                     isInTable = false;
                 }
 
-                // Decides if <br> tag will be added or not
-                if (!(isInCodeBlock || isInTable || string.IsNullOrWhiteSpace(line)) && // Checks if the line is neither in a code block nor in a table and is not empty.
-                    Regex.IsMatch(line, WorkItemPattern)) // If line matches workItem pattern
-                {
-                    // Adds <br> tag to insert line breaks as in the original markdown document
-                    line += "<br>";
+                // Determine if we should add a <br> tag
+                bool shouldAddBreak =
+                    !isInCodeBlock && // code blocks should not get line breaks because they would break the code block structure
+                    !isInTable && // tables should not get line breaks because they would break the table structure
+                    !string.IsNullOrWhiteSpace(line) && // empty lines should not get line breaks to avoid to large empty space
+                    !line.Contains("[TOC]"); // table of content should not get line breaks because to avoid broken br tags
 
-                    // Adds processed line to new adjusted markdown list
-                    processedLines.Add(line);
-                }
-                else
+                if (shouldAddBreak)
                 {
-                    // Adds the skipped line (code block, table, or empty) without further processing
-                    processedLines.Add(line);
+                    line += "<br>";
                 }
+
+                processedLines.Add(line);
             }
 
             return string.Join("\n", processedLines);
