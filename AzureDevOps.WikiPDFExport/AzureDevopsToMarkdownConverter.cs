@@ -13,11 +13,6 @@ namespace azuredevops_export_wiki
         // Format: #headline
         private const string HeadlinePattern = @"^(#+)(?!\d+|$|#)([^\s])(.*)$";
 
-        // Regex pattern to find all work items. Looks for # followed by a number.  
-        // Format: (#12345) 
-        private const string WorkItemPattern = @"#\d+";
-
-
         /// <summary>
         /// Preprocesses the markdown content to ensure consistency by:
         /// - Converting Azure DevOps-specific syntax to standard markdown.
