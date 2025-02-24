@@ -41,7 +41,9 @@ namespace azuredevops_export_wiki
                 // Checks if the line is inside a code block.
                 if (line.Trim().StartsWith("```"))
                 {
+                    processedLines.Add(line); // Adds the line with no <br> Tag
                     isInCodeBlock = !isInCodeBlock;
+                    continue; // Exits the loop to prevent adding a <br> tag to the last line of a code block
                 }
 
                 // Checks if the line is inside a table
