@@ -58,10 +58,10 @@ namespace azuredevops_export_wiki
 
                 // Determine if we should add a <br> tag
                 bool shouldAddBreak =
-                    !isInCodeBlock && // if line is not in CodeBlock
-                    !isInTable && // if line is not in table
-                    !string.IsNullOrWhiteSpace(line) && // if line is not empty
-                    !line.Contains("[TOC]"); // if line is not in toc
+                    !isInCodeBlock && // code blocks should not get line breaks because they would break the code block structure
+                    !isInTable && // tables should not get line breaks because they would break the table structure
+                    !string.IsNullOrWhiteSpace(line) && // empty lines should not get line breaks to avoid to large empty space
+                    !line.Contains("[TOC]"); // table of content should not get line breaks because to avoid broken br tags
 
                 if (shouldAddBreak)
                 {
