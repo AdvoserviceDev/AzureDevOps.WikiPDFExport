@@ -50,6 +50,10 @@ namespace azuredevops_export_wiki
                 // If the line starts and ends with "|", it sets isInTable to true
                 if (line.StartsWith("|") && line.EndsWith("|"))
                 {
+                    if (isInTable == false)
+                    {
+                        processedLines.Add(""); // Inserts an empty line before the start of a table to ensure that tables without a preceding empty line are also recognized as tables.
+                    }
                     isInTable = true;
                 }
                 // If the line no longer starts or ends with "|", and is not empty or whitespace, it sets isInTable to false
