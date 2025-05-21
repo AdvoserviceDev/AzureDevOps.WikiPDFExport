@@ -326,7 +326,7 @@ namespace azuredevops_export_wiki
             catch (Exception ex)
             {
                 Log($"Error fetching work item #{id}: {ex.Message}", LogLevel.Warning);
-                return $"#{id} - WorkItem konnte nicht geladen werden";
+                return $"#{id}";
             }
         }
 
