@@ -294,32 +294,40 @@ namespace azuredevops_export_wiki
                 return stringId;
             }
 
-            WorkItem workItem = await witClient.GetWorkItemAsync(id, expand: WorkItemExpand.All);
-            WorkItemType type = await witClient.GetWorkItemTypeAsync(workItem.Fields["System.TeamProject"].ToString(),
-                                                                        workItem.Fields["System.WorkItemType"].ToString());
+            try
+            {
+                WorkItem workItem = await witClient.GetWorkItemAsync(id, expand: WorkItemExpand.All);
+                WorkItemType type = await witClient.GetWorkItemTypeAsync(workItem.Fields["System.TeamProject"].ToString(),
+                                                                            workItem.Fields["System.WorkItemType"].ToString());
 
-            string childColor = type.Color;
-            string childIcon = this._iconClass[type.Icon.Id];
-            string url = ((ReferenceLink)workItem.Links.Links["html"]).Href;
-            string title = workItem.Fields["System.Title"].ToString();
-            string state = workItem.Fields["System.State"].ToString();
-            string stateColor = type.States.First(s => s.Name == state).Color;
+                string childColor = type.Color;
+                string childIcon = this._iconClass[type.Icon.Id];
+                string url = ((ReferenceLink)workItem.Links.Links["html"]).Href;
+                string title = workItem.Fields["System.Title"].ToString();
+                string state = workItem.Fields["System.State"].ToString();
+                string stateColor = type.States.First(s => s.Name == state).Color;
 
-            return $@"
-            <span class=""mention-widget-workitem"" style=""border-left-color: #{childColor};"">
-                <a class=""mention-link mention-wi-link mention-click-handled"" href=""{url}"">
-                    <span class=""work-item-type-icon-host"">
-                    <i class=""work-item-type-icon bowtie-icon {childIcon}"" role=""figure"" style=""color: #{childColor};""></i>
+                return $@"
+                    <span class=""mention-widget-workitem"" style=""border-left-color: #{childColor};"">
+                        <a class=""mention-link mention-wi-link mention-click-handled"" href=""{url}"">
+                            <span class=""work-item-type-icon-host"">
+                            <i class=""work-item-type-icon bowtie-icon {childIcon}"" role=""figure"" style=""color: #{childColor};""></i>
+                            </span>
+                            <span class=""secondary-text"">{workItem.Id}</span>
+                            <span class=""mention-widget-workitem-title fontWeightSemiBold"">{title}</span>
+                        </a>
+                        <span class=""mention-widget-workitem-state"">
+                            <span class=""workitem-state-color"" style=""color: #{stateColor};""></span>
+                            <span>{state}</span>
+                        </span>
                     </span>
-                    <span class=""secondary-text"">{workItem.Id}</span>
-                    <span class=""mention-widget-workitem-title fontWeightSemiBold"">{title}</span>
-                </a>
-                <span class=""mention-widget-workitem-state"">
-                    <span class=""workitem-state-color"" style=""color: #{stateColor};""></span>
-                    <span>{state}</span>
-                </span>
-            </span>
-            ";
+                    ";
+            }
+            catch (Exception ex)
+            {
+                Log($"Error fetching work item #{id}: {ex.Message}", LogLevel.Warning);
+                return $"#{id}";
+            }
         }
 
         public void Log(string msg, LogLevel logLevel = LogLevel.Information, int indent = 0)
