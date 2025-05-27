@@ -82,6 +82,8 @@ namespace azuredevops_export_wiki
                 files.Insert(_options.GlobalTOCPosition, tocMarkdownFile);
             }
 
+            bool hasH2NoAsTopLevelHeadline = false;
+
             for (var i = 0; i < files.Count; i++)
             {
                 var mf = files[i];
@@ -89,7 +91,10 @@ namespace azuredevops_export_wiki
 
                 Log($"{file.Name}", LogLevel.Information, 1);
 
-                var md = AzureDevopsToMarkdownConverter.ConvertAzureDevopsToStandardMarkdown(mf.Content);
+                var (mdContext, newHasH2NoAsTopLevelHeadline) = AzureDevopsToMarkdownConverter.ConvertAzureDevopsToStandardMarkdown(mf.Content, hasH2NoAsTopLevelHeadline);
+
+                hasH2NoAsTopLevelHeadline = newHasH2NoAsTopLevelHeadline;
+                var md = mdContext;
 
                 if (string.IsNullOrEmpty(md))
                 {

@@ -21,7 +21,7 @@ namespace azuredevops_export_wiki
         /// </summary>
         /// <param name="markdown">The markdown content to preprocess.</param>
         /// <returns>The processed markdown content.</returns>
-        public static string ConvertAzureDevopsToStandardMarkdown(string markdown)
+        public static (string, bool) ConvertAzureDevopsToStandardMarkdown(string markdown, bool hasH2NoAsTopLevelHeadline)
         {
             // 1. Add a space after # for headlines matched by HeadlinePattern (ignores WorkItems).
             string processedText = Regex.Replace(markdown, HeadlinePattern, "$1 $2$3", RegexOptions.Multiline);
@@ -32,11 +32,17 @@ namespace azuredevops_export_wiki
             List<string> processedLines = new List<string>();
             bool isInCodeBlock = false;
             bool isInTable = false;
+            bool isTocPrint = false;
 
             for (int i = 0; i < lines.Length; i++)
             {
                 string line = lines[i].TrimEnd();
                 string nextLine = i < lines.Length - 1 ? lines[i + 1].TrimEnd() : "";
+
+                if (line.Contains("[TOC]"))
+                {
+                    isTocPrint = true;
+                }
 
                 // Checks if the line is inside a code block.
                 if (line.Trim().StartsWith("```"))
@@ -70,10 +76,69 @@ namespace azuredevops_export_wiki
                     line += "<br>";
                 }
 
+                // Page-Break logic in headlines
+                if (shouldAddBreak && IsHeadline(line) && !isTocPrint)
+                {
+                    int headlineLevel = GetHeadlineLevel(line);
+                    
+                    // Add pagebreak if headline is not after another h2 headline
+                    if(headlineLevel == 1 && hasH2NoAsTopLevelHeadline)
+                    {
+                        processedLines.Add("<div style='page-break-before: always;'></div>");
+                        processedLines.Add("");
+                        hasH2NoAsTopLevelHeadline = false;
+                    }
+
+                    else if (headlineLevel == 1)
+                    {
+                        hasH2NoAsTopLevelHeadline = false;
+                    }
+
+                    else
+                    {
+                        hasH2NoAsTopLevelHeadline = true;
+                    }
+                }
+                
                 processedLines.Add(line);
             }
 
-            return string.Join("\n", processedLines);
+            return (string.Join("\n", processedLines), hasH2NoAsTopLevelHeadline);
+        }
+
+        /// <summary>
+        /// Checks if a line is a headline (starts with #).
+        /// </summary>
+        /// <param name="line">The line to check.</param>
+        /// <returns>True if the line is a headline, false otherwise.</returns>
+        private static bool IsHeadline(string line)
+        {
+            string trimmedLine = line.Trim();
+            return trimmedLine.StartsWith("#") && !Regex.IsMatch(trimmedLine, @"^#+\d"); // Exclude WorkItems
+        }
+
+        /// <summary>
+        /// Gets the headline level (number of # characters) from a headline.
+        /// </summary>
+        /// <param name="line">The headline line.</param>
+        /// <returns>The headline level (1-6), or 0 if not a valid headline.</returns>
+        private static int GetHeadlineLevel(string line)
+        {
+            if (!IsHeadline(line))
+                return 0;
+
+            string trimmedLine = line.Trim();
+            int level = 0;
+
+            for (int i = 0; i < trimmedLine.Length && i < 6; i++)
+            {
+                if (trimmedLine[i] == '#')
+                    level++;
+                else
+                    break;
+            }
+
+            return level;
         }
     }
 }
