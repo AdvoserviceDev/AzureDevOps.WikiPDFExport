@@ -47,8 +47,8 @@ namespace azuredevops_export_wiki
                 }
 
                 // Checks if the line is inside a table
-                // If the line starts and ends with "|", it sets isInTable to true
-                if (line.StartsWith("|") && line.EndsWith("|"))
+                // If the line starts with "|", it sets isInTable to true
+                if (line.StartsWith("|"))
                 {
                     if (isInTable == false)
                     {
@@ -56,8 +56,8 @@ namespace azuredevops_export_wiki
                     }
                     isInTable = true;
                 }
-                // If the line no longer starts or ends with "|", and is not empty or whitespace, it sets isInTable to false
-                else if (isInTable && (!line.StartsWith("|") || !line.EndsWith("|")) && !string.IsNullOrWhiteSpace(line))
+                // If the line no longer starts with "|", and is not empty or whitespace, it sets isInTable to false
+                else if (isInTable && !line.StartsWith("|") && !string.IsNullOrWhiteSpace(line))
                 {
                     isInTable = false;
                 }
