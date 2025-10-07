@@ -64,6 +64,24 @@ namespace azuredevops_export_wiki
                 pipelineBuilder = pipelineBuilder.UseMermaidContainers();
             }
 
+            // Skip pages with [Nicht Drucken] in the title or filename
+            var skipList = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var mf in files)
+            {
+                var decodedName = HttpUtility.UrlDecode(mf.FileRelativePath);
+
+                if (decodedName.Contains("[Nicht Drucken]", StringComparison.OrdinalIgnoreCase) ||
+                    decodedName.Contains("[Nicht-Drucken]", StringComparison.OrdinalIgnoreCase))
+                {
+                    Log($"Skipping '{mf.FileInfo.Name}' (decoded: '{decodedName}') because it is marked as [Nicht Drucken].", LogLevel.Information, 1);
+                    skipList.Add(mf.FileRelativePath);
+                }
+            }
+
+            // Filter files before processing
+            files = files.Where(f => !skipList.Contains(f.FileRelativePath)).ToList();
+
             if (!string.IsNullOrEmpty(_options.GlobalTOC))
             {
                 if (_options.GlobalTOCPosition > files.Count)
