@@ -32,13 +32,11 @@ namespace azuredevops_export_wiki
             List<string> processedLines = new List<string>();
             bool isInCodeBlock = false;
             bool isInTable = false;
-            bool tableHasCaption = false;
 
             for (int i = 0; i < lines.Length; i++)
             {
                 string line = lines[i].TrimEnd();
                 string nextLine = i < lines.Length - 1 ? lines[i + 1].TrimEnd() : "";
-                string previousLine = i > 0 ? lines[i - 1].TrimEnd() : "";
 
                 // Checks if the line is inside a code block.
                 if (line.Trim().StartsWith("```"))
@@ -54,29 +52,19 @@ namespace azuredevops_export_wiki
                 {
                     if (isInTable == false)
                     {
-                        // Check if previous line in original text is empty
-                        bool hasEmptyLineAbove = string.IsNullOrWhiteSpace(previousLine);
-                        tableHasCaption = !hasEmptyLineAbove;
-                        
-                        if (tableHasCaption)
+                        // Check if the previous line in processedLines has content (potential caption)
+                        if (processedLines.Count > 0 && !string.IsNullOrWhiteSpace(processedLines[processedLines.Count - 1]))
                         {
-                            // Remove <br> from the last line (the caption) if it was added
-                            if (processedLines.Count > 0 && processedLines[processedLines.Count - 1].EndsWith("<br>"))
+                            // Remove <br> from the caption if it was added
+                            string lastLine = processedLines[processedLines.Count - 1];
+                            if (lastLine.EndsWith("<br>"))
                             {
-                                string lastLine = processedLines[processedLines.Count - 1];
-                                processedLines[processedLines.Count - 1] = lastLine.Substring(0, lastLine.Length - 4);
+                                lastLine = lastLine.Substring(0, lastLine.Length - 4);
                             }
-                            
-                            // Wrap the caption with the class and add empty line for table rendering
-                            string caption = processedLines[processedLines.Count - 1];
-                            processedLines[processedLines.Count - 1] = $"<span class=\"table-with-caption\">{caption}</span>";
-                            processedLines.Add(""); // Empty line needed for markdown table to render correctly
+                            // Wrap the caption with the class
+                            processedLines[processedLines.Count - 1] = $"<span class=\"table-with-caption\">{lastLine}</span>";
                         }
-                        else
-                        {
-                            // Normal table without caption - add empty line as before
-                            processedLines.Add(""); 
-                        }
+                        processedLines.Add(""); // Inserts an empty line before the start of a table to ensure that tables without a preceding empty line are also recognized as tables.
                     }
                     isInTable = true;
                 }
@@ -84,7 +72,6 @@ namespace azuredevops_export_wiki
                 else if (isInTable && !line.StartsWith("|") && !string.IsNullOrWhiteSpace(line))
                 {
                     isInTable = false;
-                    tableHasCaption = false;
                 }
 
                 // Determine if we should add a <br> tag
