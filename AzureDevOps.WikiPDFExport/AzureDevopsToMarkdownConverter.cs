@@ -67,13 +67,10 @@ namespace azuredevops_export_wiki
                                 processedLines[processedLines.Count - 1] = lastLine.Substring(0, lastLine.Length - 4);
                             }
                             
-                            // Remove the caption from processedLines temporarily
+                            // Wrap the caption with the class and add empty line for table rendering
                             string caption = processedLines[processedLines.Count - 1];
-                            processedLines.RemoveAt(processedLines.Count - 1);
-                            
-                            // Add opening div tag, then add caption back, so structure is: <div> caption table
-                            processedLines.Add("<div class=\"table-with-caption\">");
-                            processedLines.Add(caption);
+                            processedLines[processedLines.Count - 1] = $"<span class=\"table-with-caption\">{caption}</span>";
+                            processedLines.Add(""); // Empty line needed for markdown table to render correctly
                         }
                         else
                         {
@@ -87,11 +84,7 @@ namespace azuredevops_export_wiki
                 else if (isInTable && !line.StartsWith("|") && !string.IsNullOrWhiteSpace(line))
                 {
                     isInTable = false;
-                    if (tableHasCaption)
-                    {
-                        processedLines.Add("</div>");
-                        tableHasCaption = false;
-                    }
+                    tableHasCaption = false;
                 }
 
                 // Determine if we should add a <br> tag
@@ -107,12 +100,6 @@ namespace azuredevops_export_wiki
                 }
 
                 processedLines.Add(line);
-            }
-
-            // Close any open table-with-caption div at the end of document
-            if (isInTable && tableHasCaption)
-            {
-                processedLines.Add("</div>");
             }
 
             return string.Join("\n", processedLines);
