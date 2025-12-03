@@ -11,30 +11,41 @@ namespace azuredevops_export_wiki
     /// </summary>
     internal class GermanHyphenation
     {
-        private static NHunspell.Hyphen hyphenator;
+        private NHunspell.Hyphen hyphenator;
 
-        public static string InsertSoftHyphens(string html)
+        public string InsertSoftHyphens(string html)
         {
             if (hyphenator == null)
             {
-                string dictPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "dictionaries", "hyph_de_DE.dic");
+                string exePath = System.Reflection.Assembly.GetEntryAssembly()?.Location;
+                string exeDir = exePath != null ? System.IO.Path.GetDirectoryName(exePath) : null;
+                string dictPath;
+                if (exeDir != null)
+                {
+                    dictPath = System.IO.Path.Combine(exeDir, "dictionaries", "hyph_de_DE.dic");
+                }
+                else
+                {
+                    Console.Error.WriteLine("[GermanHyphenation] Executable directory could not be determined. Dictionary path cannot be set.");
+                    return html;
+                }
                 hyphenator = new NHunspell.Hyphen(dictPath);
             }
             
-            // Protect <style>, <script>, <table> blocks and <div class="table-with-caption"> blocks
-            var blocks = new List<string>();
+            // Protect <style> and <script> blocks because they have text between their tags that must stay as-is
+            List<string> blocks = new List<string>();
             html = Regex.Replace(html, @"<(style|script)[^>]*>.*?</\1>", m => { blocks.Add(m.Value); return $"___P{blocks.Count - 1}___"; }, RegexOptions.Singleline | RegexOptions.IgnoreCase);
             html = Regex.Replace(html, @"<table[^>]*>.*?</table>", m => { blocks.Add(m.Value); return $"___P{blocks.Count - 1}___"; }, RegexOptions.Singleline | RegexOptions.IgnoreCase);
             html = Regex.Replace(html, @"<div class=""table-with-caption"">.*?</div>", m => { blocks.Add(m.Value); return $"___P{blocks.Count - 1}___"; }, RegexOptions.Singleline | RegexOptions.IgnoreCase);
             
             // Split by tags and hyphenate text content only
-            var result = new StringBuilder();
+            StringBuilder result = new StringBuilder();
             foreach (var part in Regex.Split(html, @"(<[^>]+>)"))
             {
                 if (part.StartsWith("<") || part.StartsWith("___P"))
                     result.Append(part);
                 else
-                    result.Append(Regex.Replace(part, @"\b([a-zA-ZäöüÄÖÜß]{8,})\b", m => hyphenator.Hyphenate(m.Value)?.HyphenatedWord?.Replace("=", "&shy;") ?? m.Value));
+                    result.Append(Regex.Replace(part, @"\b([a-zA-ZäöüÄÖÜß]{3,})\b", m => hyphenator.Hyphenate(m.Value)?.HyphenatedWord?.Replace("=", "&shy;") ?? m.Value));
             }
             
             // Restore protected blocks
