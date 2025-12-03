@@ -229,7 +229,7 @@ namespace azuredevops_export_wiki
 
                     // Insert soft hyphens into german words to enable proper word breaking in PDF
                     Log("Inserting soft hyphens for German word breaking");
-                    html = GermanHyphenation.InsertSoftHyphens(html);
+                    html = new GermanHyphenation().InsertSoftHyphens(html);
 
 #if HTML_IN_MEMORY
                     if (_options.Debug)
