@@ -32,11 +32,13 @@ namespace azuredevops_export_wiki
             List<string> processedLines = new List<string>();
             bool isInCodeBlock = false;
             bool isInTable = false;
+            bool tableHasCaption = false;
 
             for (int i = 0; i < lines.Length; i++)
             {
                 string line = lines[i].TrimEnd();
                 string nextLine = i < lines.Length - 1 ? lines[i + 1].TrimEnd() : "";
+                string previousLine = i > 0 ? lines[i - 1].TrimEnd() : "";
 
                 // Checks if the line is inside a code block.
                 if (line.Trim().StartsWith("```"))
@@ -52,7 +54,32 @@ namespace azuredevops_export_wiki
                 {
                     if (isInTable == false)
                     {
-                        processedLines.Add(""); // Inserts an empty line before the start of a table to ensure that tables without a preceding empty line are also recognized as tables.
+                        // Check if previous line in original text is empty
+                        bool hasEmptyLineAbove = string.IsNullOrWhiteSpace(previousLine);
+                        tableHasCaption = !hasEmptyLineAbove;
+                        
+                        if (tableHasCaption)
+                        {
+                            // Remove <br> from the last line (the caption) if it was added
+                            if (processedLines.Count > 0 && processedLines[processedLines.Count - 1].EndsWith("<br>"))
+                            {
+                                string lastLine = processedLines[processedLines.Count - 1];
+                                processedLines[processedLines.Count - 1] = lastLine.Substring(0, lastLine.Length - 4);
+                            }
+                            
+                            // Remove the caption from processedLines temporarily
+                            string caption = processedLines[processedLines.Count - 1];
+                            processedLines.RemoveAt(processedLines.Count - 1);
+                            
+                            // Add opening div tag, then add caption back, so structure is: <div> caption table
+                            processedLines.Add("<div class=\"table-with-caption\">");
+                            processedLines.Add(caption);
+                        }
+                        else
+                        {
+                            // Normal table without caption - add empty line as before
+                            processedLines.Add(""); 
+                        }
                     }
                     isInTable = true;
                 }
@@ -60,6 +87,11 @@ namespace azuredevops_export_wiki
                 else if (isInTable && !line.StartsWith("|") && !string.IsNullOrWhiteSpace(line))
                 {
                     isInTable = false;
+                    if (tableHasCaption)
+                    {
+                        processedLines.Add("</div>");
+                        tableHasCaption = false;
+                    }
                 }
 
                 // Determine if we should add a <br> tag
@@ -77,7 +109,14 @@ namespace azuredevops_export_wiki
                 processedLines.Add(line);
             }
 
+            // Close any open table-with-caption div at the end of document
+            if (isInTable && tableHasCaption)
+            {
+                processedLines.Add("</div>");
+            }
+
             return string.Join("\n", processedLines);
         }
+
     }
 }

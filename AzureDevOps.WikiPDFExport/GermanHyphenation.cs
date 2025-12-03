@@ -21,9 +21,11 @@ namespace azuredevops_export_wiki
                 hyphenator = new NHunspell.Hyphen(dictPath);
             }
             
-            // Protect <style> and <script> blocks
+            // Protect <style>, <script>, <table> blocks and <div class="table-with-caption"> blocks
             var blocks = new List<string>();
             html = Regex.Replace(html, @"<(style|script)[^>]*>.*?</\1>", m => { blocks.Add(m.Value); return $"___P{blocks.Count - 1}___"; }, RegexOptions.Singleline | RegexOptions.IgnoreCase);
+            html = Regex.Replace(html, @"<table[^>]*>.*?</table>", m => { blocks.Add(m.Value); return $"___P{blocks.Count - 1}___"; }, RegexOptions.Singleline | RegexOptions.IgnoreCase);
+            html = Regex.Replace(html, @"<div class=""table-with-caption"">.*?</div>", m => { blocks.Add(m.Value); return $"___P{blocks.Count - 1}___"; }, RegexOptions.Singleline | RegexOptions.IgnoreCase);
             
             // Split by tags and hyphenate text content only
             var result = new StringBuilder();
