@@ -19,17 +19,21 @@ namespace azuredevops_export_wiki
             {
                 string exePath = System.Reflection.Assembly.GetEntryAssembly()?.Location;
                 string exeDir = exePath != null ? System.IO.Path.GetDirectoryName(exePath) : null;
-                string dictPath;
-                if (exeDir != null)
+                // Fallback auf BaseDirectory, falls exeDir null ist
+                if (exeDir == null)
                 {
-                    dictPath = System.IO.Path.Combine(exeDir, "dictionaries", "hyph_de_DE.dic");
+                    exeDir = AppDomain.CurrentDomain.BaseDirectory;
                 }
-                else
+                string dictPath = System.IO.Path.Combine(exeDir, "dictionaries", "hyph_de_DE.dic");
+                try
                 {
-                    Console.Error.WriteLine("[GermanHyphenation] Executable directory could not be determined. Dictionary path cannot be set.");
+                    hyphenator = new NHunspell.Hyphen(dictPath);
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"[GermanHyphenation] Could not load dictionary file '{dictPath}': {ex.Message}");
                     return html;
                 }
-                hyphenator = new NHunspell.Hyphen(dictPath);
             }
             
             // Protect <style> and <script> blocks because they have text between their tags that must stay as-is
@@ -38,11 +42,12 @@ namespace azuredevops_export_wiki
             
             // Split by tags and hyphenate text content only
             StringBuilder result = new StringBuilder();
-            foreach (var part in Regex.Split(html, @"(<[^>]+>)"))
+            foreach (string part in Regex.Split(html, @"(<[^>]+>)"))
             {
                 if (part.StartsWith("<") || part.StartsWith("___P"))
                     result.Append(part);
                 else
+                    // Hyphenate words with 3 or more letters
                     result.Append(Regex.Replace(part, @"\b([a-zA-ZäöüÄÖÜß]{3,})\b", m => hyphenator.Hyphenate(m.Value)?.HyphenatedWord?.Replace("=", "&shy;") ?? m.Value));
             }
             
