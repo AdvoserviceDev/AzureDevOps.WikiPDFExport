@@ -52,6 +52,25 @@ namespace azuredevops_export_wiki
                 {
                     if (isInTable == false)
                     {
+                        // Skip tables which do not have text directly
+                        int lastNonEmptyIndex = processedLines.Count - 1;
+                        while (lastNonEmptyIndex >= 0 && string.IsNullOrWhiteSpace(processedLines[lastNonEmptyIndex]))
+                        {
+                            lastNonEmptyIndex--;
+                        }
+                        
+                        if (lastNonEmptyIndex >= 0)
+                        {
+                            string lastLine = processedLines[lastNonEmptyIndex];
+                            // Removes <br> tag to identify headlines
+                            string lastLineWithoutBr = lastLine.Replace("<br>", "").Trim();
+                            
+                            // Wrap non-headline texts with css-Tag
+                            if (!lastLineWithoutBr.StartsWith("#") && !lastLine.Contains("<span class=\"table-with-caption\">"))
+                            {
+                                processedLines[lastNonEmptyIndex] = $"<span class=\"table-with-caption\">{lastLine}</span>";
+                            }
+                        }
                         processedLines.Add(""); // Inserts an empty line before the start of a table to ensure that tables without a preceding empty line are also recognized as tables.
                     }
                     isInTable = true;
@@ -67,7 +86,8 @@ namespace azuredevops_export_wiki
                     !isInCodeBlock && // code blocks should not get line breaks because they would break the code block structure
                     !isInTable && // tables should not get line breaks because they would break the table structure
                     !string.IsNullOrWhiteSpace(line) && // empty lines should not get line breaks to avoid to large empty space
-                    !line.Contains("[TOC]"); // table of content should not get line breaks because to avoid broken br tags
+                    !line.Contains("[TOC]") && // table of content should not get line breaks because to avoid broken br tags
+                    !(nextLine.StartsWith("|") && !isInTable); // <br> tags should not be added before table captions to avoid broken captions
 
                 if (shouldAddBreak)
                 {
