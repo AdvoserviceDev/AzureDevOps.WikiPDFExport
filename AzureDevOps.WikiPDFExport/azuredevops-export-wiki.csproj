@@ -17,6 +17,14 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <TargetPath>devopswikistyle.css</TargetPath>
     </Content>
+    <Content Include="dictionaries\*.dic">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>dictionaries\%(Filename)%(Extension)</TargetPath>
+    </Content>
+    <Content Include="dictionaries\*.aff">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>dictionaries\%(Filename)%(Extension)</TargetPath>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
@@ -28,7 +36,19 @@
     <PackageReference Include="Microsoft.VisualStudio.Services.Client" Version="19.225.1" />
     <PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="19.225.1" />
     <PackageReference Include="Microsoft.VisualStudio.Services.InteractiveClient" Version="19.225.1" />
+    <PackageReference Include="NHunspell" Version="1.2.5554.16953" />
     <PackageReference Include="PuppeteerSharp" Version="20.2.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="$(NuGetPackageRoot)nhunspell\1.2.5554.16953\content\Hunspellx64.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>Hunspellx64.dll</Link>
+    </None>
+    <None Include="$(NuGetPackageRoot)nhunspell\1.2.5554.16953\content\Hunspellx86.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>Hunspellx86.dll</Link>
+    </None>
   </ItemGroup>
 
 </Project>

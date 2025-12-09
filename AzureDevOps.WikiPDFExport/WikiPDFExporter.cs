@@ -227,6 +227,10 @@ namespace azuredevops_export_wiki
                     //build the html for rendering
                     html = $"{htmlStart}{headStart}{string.Concat(header)}{headEnd}<body>{html}<footer>{string.Concat(footer)}</footer></body>{htmlEnd}";
 
+                    // Insert soft hyphens into german words to enable proper word breaking in PDF
+                    Log("Inserting soft hyphens for German word breaking");
+                    html = new GermanHyphenation(_logger).InsertSoftHyphens(html);
+
 #if HTML_IN_MEMORY
                     if (_options.Debug)
                     {
