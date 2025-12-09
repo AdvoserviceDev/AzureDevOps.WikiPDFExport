@@ -53,16 +53,26 @@ namespace azuredevops_export_wiki
                     if (isInTable == false)
                     {
                         // Check if the previous line in processedLines has content (potential caption)
-                        if (processedLines.Count > 0 && !string.IsNullOrWhiteSpace(processedLines[processedLines.Count - 1]))
+                        // Skip empty lines and look for the last non-empty line
+                        int lastNonEmptyIndex = processedLines.Count - 1;
+                        while (lastNonEmptyIndex >= 0 && string.IsNullOrWhiteSpace(processedLines[lastNonEmptyIndex]))
                         {
-                            // Remove <br> from the caption if it was added
-                            string lastLine = processedLines[processedLines.Count - 1];
-                            if (lastLine.EndsWith("<br>"))
+                            lastNonEmptyIndex--;
+                        }
+                        
+                        if (lastNonEmptyIndex >= 0)
+                        {
+                            string lastLine = processedLines[lastNonEmptyIndex];
+                            // Get the text without <br> tag for checking if it's a headline
+                            string lastLineWithoutBr = lastLine.Replace("<br>", "").Trim();
+                            
+                            // Only wrap as caption if the previous line is NOT a headline
+                            // Headlines start with # after trimming and need to stay as-is for proper rendering
+                            if (!lastLineWithoutBr.StartsWith("#") && !lastLine.Contains("<span class=\"table-with-caption\">"))
                             {
-                                lastLine = lastLine.Substring(0, lastLine.Length - 4);
+                                // Wrap the caption with the class
+                                processedLines[lastNonEmptyIndex] = $"<span class=\"table-with-caption\">{lastLine}</span>";
                             }
-                            // Wrap the caption with the class
-                            processedLines[processedLines.Count - 1] = $"<span class=\"table-with-caption\">{lastLine}</span>";
                         }
                         processedLines.Add(""); // Inserts an empty line before the start of a table to ensure that tables without a preceding empty line are also recognized as tables.
                     }
@@ -79,7 +89,8 @@ namespace azuredevops_export_wiki
                     !isInCodeBlock && // code blocks should not get line breaks because they would break the code block structure
                     !isInTable && // tables should not get line breaks because they would break the table structure
                     !string.IsNullOrWhiteSpace(line) && // empty lines should not get line breaks to avoid to large empty space
-                    !line.Contains("[TOC]"); // table of content should not get line breaks because to avoid broken br tags
+                    !line.Contains("[TOC]") && // table of content should not get line breaks because to avoid broken br tags
+                    !(nextLine.StartsWith("|") && !isInTable); // don't add <br> before table captions
 
                 if (shouldAddBreak)
                 {
@@ -91,6 +102,5 @@ namespace azuredevops_export_wiki
 
             return string.Join("\n", processedLines);
         }
-
     }
 }
