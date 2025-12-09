@@ -52,8 +52,7 @@ namespace azuredevops_export_wiki
                 {
                     if (isInTable == false)
                     {
-                        // Check if the previous line in processedLines has content (potential caption)
-                        // Skip empty lines and look for the last non-empty line
+                        // Skip tables which do not have text directly
                         int lastNonEmptyIndex = processedLines.Count - 1;
                         while (lastNonEmptyIndex >= 0 && string.IsNullOrWhiteSpace(processedLines[lastNonEmptyIndex]))
                         {
@@ -63,14 +62,12 @@ namespace azuredevops_export_wiki
                         if (lastNonEmptyIndex >= 0)
                         {
                             string lastLine = processedLines[lastNonEmptyIndex];
-                            // Get the text without <br> tag for checking if it's a headline
+                            // Removes <br> tag to identify headlines
                             string lastLineWithoutBr = lastLine.Replace("<br>", "").Trim();
                             
-                            // Only wrap as caption if the previous line is NOT a headline
-                            // Headlines start with # after trimming and need to stay as-is for proper rendering
+                            // Wrap non-headline texts with css-Tag
                             if (!lastLineWithoutBr.StartsWith("#") && !lastLine.Contains("<span class=\"table-with-caption\">"))
                             {
-                                // Wrap the caption with the class
                                 processedLines[lastNonEmptyIndex] = $"<span class=\"table-with-caption\">{lastLine}</span>";
                             }
                         }
@@ -90,7 +87,7 @@ namespace azuredevops_export_wiki
                     !isInTable && // tables should not get line breaks because they would break the table structure
                     !string.IsNullOrWhiteSpace(line) && // empty lines should not get line breaks to avoid to large empty space
                     !line.Contains("[TOC]") && // table of content should not get line breaks because to avoid broken br tags
-                    !(nextLine.StartsWith("|") && !isInTable); // don't add <br> before table captions
+                    !(nextLine.StartsWith("|") && !isInTable); // <br> tags should not be added before table captions to avoid broken captions
 
                 if (shouldAddBreak)
                 {
