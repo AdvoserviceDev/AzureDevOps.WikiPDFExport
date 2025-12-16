@@ -45,7 +45,7 @@ namespace azuredevops_export_wiki
                 // Hyphenator could not be loaded, return html unchanged
                 return html;
             }
-            // Protect <style>, <script> and <table> blocks because they have text between their tags that must stay as-is
+            // Protect <style> and <script> blocks because they have text between their tags that must stay as-is
             List<string> blocks = new List<string>();
             html = Regex.Replace(html, @"<(style|script)[^>]*>.*?</\1>", m => { blocks.Add(m.Value); return $"___P{blocks.Count - 1}___"; }, RegexOptions.Singleline | RegexOptions.IgnoreCase);
             // Split by tags and hyphenate text content only
