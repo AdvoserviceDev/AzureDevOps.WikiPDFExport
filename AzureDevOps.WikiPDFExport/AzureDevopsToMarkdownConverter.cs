@@ -50,46 +50,16 @@ namespace azuredevops_export_wiki
                 // If the line starts with "|", it sets isInTable to true
                 if (line.StartsWith("|"))
                 {
-                    if (isInTable == false)
-                    {
-                        // Skip tables which do not have text directly
-                        int lastNonEmptyIndex = processedLines.Count - 1;
-                        while (lastNonEmptyIndex >= 0 && string.IsNullOrWhiteSpace(processedLines[lastNonEmptyIndex]))
-                        {
-                            lastNonEmptyIndex--;
-                        }
-                        
-                        if (lastNonEmptyIndex >= 0)
-                        {
-                            string lastLine = processedLines[lastNonEmptyIndex];
-                            // Removes <br> tag to identify headlines
-                            string lastLineWithoutBr = lastLine.Replace("<br>", "").Trim();
-                            
-                            // Wrap non-headline texts with css-Tag
-                            if (!lastLineWithoutBr.StartsWith("#") && !lastLine.Contains("<span class=\"table-with-caption\">"))
-                            {
-                                processedLines[lastNonEmptyIndex] = $"<span class=\"table-with-caption\">{lastLine}</span>";
-                            }
-                        }
-                        processedLines.Add(""); // Inserts an empty line before the start of a table to ensure that tables without a preceding empty line are also recognized as tables.
-                    }
-                    isInTable = true;
+                    // Detect and mark a table caption if text is directly above the table (no empty line)
+                    HandleTableStart(ref isInTable, processedLines);
                 }
-                // If the line no longer starts with "|", and is not empty or whitespace, it sets isInTable to false
                 else if (isInTable && !line.StartsWith("|") && !string.IsNullOrWhiteSpace(line))
                 {
                     isInTable = false;
                 }
 
-                // Determine if we should add a <br> tag
-                bool shouldAddBreak =
-                    !isInCodeBlock && // code blocks should not get line breaks because they would break the code block structure
-                    !isInTable && // tables should not get line breaks because they would break the table structure
-                    !string.IsNullOrWhiteSpace(line) && // empty lines should not get line breaks to avoid to large empty space
-                    !line.Contains("[TOC]") && // table of content should not get line breaks because to avoid broken br tags
-                    !(nextLine.StartsWith("|") && !isInTable); // <br> tags should not be added before table captions to avoid broken captions
-
-                if (shouldAddBreak)
+                // Add <br> tags for Azure DevOps line break compatibility
+                if (ShouldAddLineBreak(line, nextLine, isInCodeBlock, isInTable))
                 {
                     line += "<br>";
                 }
@@ -98,6 +68,69 @@ namespace azuredevops_export_wiki
             }
 
             return string.Join("\n", processedLines);
+        }
+
+        /// <summary>
+        /// Wraps text directly above tables with table-caption span to prevent page breaks with css-code.
+        /// Adds empty line before table for proper recognition.
+        /// </summary>
+        private static void HandleTableStart(ref bool isInTable, List<string> processedLines)
+        {
+            if (isInTable == false)
+            {
+                // Find last non-empty line (potential table caption)
+                int lastNonEmptyIndex = FindLastNonEmptyLineIndex(processedLines);
+
+
+                // Only if there is no empty line between text and table, the text is wrapped as table caption
+                if (lastNonEmptyIndex >= 0)
+                {
+                    WrapTableCaptionIfNeeded(processedLines, lastNonEmptyIndex);
+                }
+
+                // Insert empty line for table recognition
+                processedLines.Add("");
+            }
+            isInTable = true;
+        }
+
+        // Finds the last non-empty line to detect a potential table caption
+        private static int FindLastNonEmptyLineIndex(List<string> processedLines)
+        {
+            int lastNonEmptyIndex = processedLines.Count - 1;
+            while (lastNonEmptyIndex >= 0 && string.IsNullOrWhiteSpace(processedLines[lastNonEmptyIndex]))
+            {
+                lastNonEmptyIndex--;
+            }
+            return lastNonEmptyIndex;
+        }
+
+        /// <summary>
+        /// Wraps non-headline text with table-caption class for CSS styling.
+        /// </summary>
+        private static void WrapTableCaptionIfNeeded(List<string> processedLines, int lineIndex)
+        {
+            string lastLine = processedLines[lineIndex];
+            // Remove <br> tag to accurately identify headlines
+            string lastLineWithoutBr = lastLine.Replace("<br>", "").Trim();
+
+            // Only wrap non-headline text that doesn't already have the class
+            if (!lastLineWithoutBr.StartsWith("#") && !lastLine.Contains("<span class=\"table-caption\">"))
+            {
+                processedLines[lineIndex] = $"<span class=\"table-caption\">{lastLine}</span>";
+            }
+        }
+
+        /// <summary>
+        /// Determines if a <br> tag should be added for Azure DevOps markdown compatibility.
+        /// </summary>
+        private static bool ShouldAddLineBreak(string line, string nextLine, bool isInCodeBlock, bool isInTable)
+        {
+            return !isInCodeBlock && // Code blocks would break
+                   !isInTable && // Table structure would break
+                   !string.IsNullOrWhiteSpace(line) && // Avoid excessive spacing
+                   !line.Contains("[TOC]") && // TOC would break
+                   !(nextLine.StartsWith("|") && !isInTable); // Don't break table captions
         }
     }
 }

@@ -48,8 +48,6 @@ namespace azuredevops_export_wiki
             // Protect <style>, <script> and <table> blocks because they have text between their tags that must stay as-is
             List<string> blocks = new List<string>();
             html = Regex.Replace(html, @"<(style|script)[^>]*>.*?</\1>", m => { blocks.Add(m.Value); return $"___P{blocks.Count - 1}___"; }, RegexOptions.Singleline | RegexOptions.IgnoreCase);
-            html = Regex.Replace(html, @"<table[^>]*>.*?</table>", m => { blocks.Add(m.Value); return $"___P{blocks.Count - 1}___"; }, RegexOptions.Singleline | RegexOptions.IgnoreCase);
-            
             // Split by tags and hyphenate text content only
             StringBuilder result = new StringBuilder();
             foreach (string part in Regex.Split(html, @"(<[^>]+>)"))
