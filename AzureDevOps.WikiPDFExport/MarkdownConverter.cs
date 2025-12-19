@@ -108,6 +108,7 @@ namespace azuredevops_export_wiki
                 Log($"{file.Name}", LogLevel.Information, 1);
 
                 var md = AzureDevopsToMarkdownConverter.ConvertAzureDevopsToStandardMarkdown(mf.Content);
+                md = MarkdownHtmlProcessor.InsertTableCaptions(md);
 
                 if (string.IsNullOrEmpty(md))
                 {

@@ -50,8 +50,12 @@ namespace azuredevops_export_wiki
                 // If the line starts with "|", it sets isInTable to true
                 if (line.StartsWith("|"))
                 {
-                    // Detect and mark a table caption if text is directly above the table (no empty line)
-                    HandleTableStart(ref isInTable, processedLines);
+                    if (!isInTable)
+                    {
+                        // Insert empty line before table so Markdown parsers recognize the table
+                        processedLines.Add("");
+                        isInTable = true;
+                    }
                 }
                 else if (isInTable && !line.StartsWith("|") && !string.IsNullOrWhiteSpace(line))
                 {
@@ -68,57 +72,6 @@ namespace azuredevops_export_wiki
             }
 
             return string.Join("\n", processedLines);
-        }
-
-        /// <summary>
-        /// Wraps text directly above tables with table-caption span to prevent page breaks with css-code.
-        /// Adds empty line before table for proper recognition.
-        /// </summary>
-        private static void HandleTableStart(ref bool isInTable, List<string> processedLines)
-        {
-            if (isInTable == false)
-            {
-                // Find last non-empty line (potential table caption)
-                int lastNonEmptyIndex = FindLastNonEmptyLineIndex(processedLines);
-
-
-                // Only if there is no empty line between text and table, the text is wrapped as table caption
-                if (lastNonEmptyIndex >= 0)
-                {
-                    WrapTableCaptionIfNeeded(processedLines, lastNonEmptyIndex);
-                }
-
-                // Insert empty line for table recognition
-                processedLines.Add("");
-            }
-            isInTable = true;
-        }
-
-        // Finds the last non-empty line to detect a potential table caption
-        private static int FindLastNonEmptyLineIndex(List<string> processedLines)
-        {
-            int lastNonEmptyIndex = processedLines.Count - 1;
-            while (lastNonEmptyIndex >= 0 && string.IsNullOrWhiteSpace(processedLines[lastNonEmptyIndex]))
-            {
-                lastNonEmptyIndex--;
-            }
-            return lastNonEmptyIndex;
-        }
-
-        /// <summary>
-        /// Wraps non-headline text with table-caption class for CSS styling.
-        /// </summary>
-        private static void WrapTableCaptionIfNeeded(List<string> processedLines, int lineIndex)
-        {
-            string lastLine = processedLines[lineIndex];
-            // Remove <br> tag to accurately identify headlines
-            string lastLineWithoutBr = lastLine.Replace("<br>", "").Trim();
-
-            // Only wrap non-headline text that doesn't already have the class
-            if (!lastLineWithoutBr.StartsWith("#") && !lastLine.Contains("<span class=\"table-caption\">"))
-            {
-                processedLines[lineIndex] = $"<span class=\"table-caption\">{lastLine}</span>";
-            }
         }
 
         /// <summary>
