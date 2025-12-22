@@ -1,43 +1,33 @@
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace azuredevops_export_wiki
 {
     /// <summary>
-    /// Processes markdown by adding HTML tags for better PDF rendering.
-    /// This class adds HTML-specific enhancements that are not part of standard markdown conversion.
+    /// Processes HTML output by adding tags for better PDF rendering.
+    /// This class adds HTML-specific enhancements.
     /// </summary>
-    class MarkdownHtmlProcessor
+    class HtmlProcessor
     {
         /// <summary>
-        /// Inserts HTML table captions to prevent page breaks between table titles and tables.
-        /// Wraps text directly above tables with span tags for CSS styling.
+        /// Wraps text directly above HTML tables with span tags for CSS styling to prevent page breaks.
         /// </summary>
-        /// <param name="markdown">The markdown content to process.</param>
-        /// <returns>The processed markdown content with HTML table caption tags.</returns>
-        public static string InsertTableCaptions(string markdown)
+        /// <param name="html">The HTML content to process.</param>
+        /// <returns>The processed HTML content with table caption spans.</returns>
+        public static string InsertTableCaptions(string html)
         {
-            string[] lines = markdown.Split('\n');
+            string[] lines = html.Split('\n');
             List<string> processedLines = new List<string>();
-            bool isInTable = false;
 
             for (int i = 0; i < lines.Length; i++)
             {
-                string line = lines[i].TrimEnd();
+                string line = lines[i];
 
-                // Detect table start
-                if (line.StartsWith("|"))
+                // Detect HTML table start
+                if (line.TrimStart().StartsWith("<table"))
                 {
-                    if (!isInTable)
-                    {
-                        // Check if previous line should be a table caption
-                        WrapTableCaptionIfDirectlyAbove(processedLines);
-                        isInTable = true;
-                    }
-                }
-                else if (isInTable && !line.StartsWith("|") && !string.IsNullOrWhiteSpace(line))
-                {
-                    // End of table
-                    isInTable = false;
+                    // Check if previous line should be a table caption
+                    WrapTableCaptionIfDirectlyAbove(processedLines);
                 }
 
                 processedLines.Add(line);
@@ -58,23 +48,29 @@ namespace azuredevops_export_wiki
             int captionLineIndex = lines.Count - 1;
             string captionLine = lines[captionLineIndex];
 
-            // Skip auto-inserted empty line before table and check the actual text line above it
-            if (string.IsNullOrWhiteSpace(captionLine) && lines.Count > 1)
+            // Skip empty lines and find the actual text line above the table
+            while (captionLineIndex >= 0 && string.IsNullOrWhiteSpace(captionLine))
             {
-                captionLineIndex = lines.Count - 2;
-                captionLine = lines[captionLineIndex];
+                captionLineIndex--;
+                if (captionLineIndex >= 0)
+                    captionLine = lines[captionLineIndex];
             }
 
-            // Only wrap if the line is not empty and doesn't already have the caption tag
-            if (string.IsNullOrWhiteSpace(captionLine))
+            // No valid caption line found
+            if (captionLineIndex < 0 || string.IsNullOrWhiteSpace(captionLine))
                 return;
 
+            // Only wrap if the line doesn't already have the caption tag
             if (captionLine.Contains("<span class=\"table-caption\">"))
                 return;
 
-            // Skip headlines because wrapping them with HTML would break markdown rendering
+            // Skip if line is already a heading tag (h1-h6)
             string trimmedLine = captionLine.TrimStart();
-            if (trimmedLine.StartsWith("#"))
+            if (Regex.IsMatch(trimmedLine, @"^<h[1-6]"))
+                return;
+
+            // Skip if line is already wrapped in other block elements that shouldn't be nested
+            if (Regex.IsMatch(trimmedLine, @"^<(div|table|ul|ol|pre|blockquote)"))
                 return;
 
             // Wrap the line with table-caption span for CSS styling

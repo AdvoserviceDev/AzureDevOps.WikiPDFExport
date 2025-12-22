@@ -108,7 +108,6 @@ namespace azuredevops_export_wiki
                 Log($"{file.Name}", LogLevel.Information, 1);
 
                 var md = AzureDevopsToMarkdownConverter.ConvertAzureDevopsToStandardMarkdown(mf.Content);
-                md = MarkdownHtmlProcessor.InsertTableCaptions(md);
 
                 if (string.IsNullOrEmpty(md))
                 {
@@ -175,6 +174,9 @@ namespace azuredevops_export_wiki
                     renderer.Render(document);
                 }
                 html = builder.ToString();
+
+                // Process HTML to add table captions
+                html = HtmlProcessor.InsertTableCaptions(html);
 
                 if (!string.IsNullOrEmpty(_options.GlobalTOC) && i == _options.GlobalTOCPosition)
                 {
