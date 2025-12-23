@@ -63,13 +63,8 @@ namespace azuredevops_export_wiki
             if (captionLine.Contains("<span class=\"table-caption\">"))
                 return;
 
-            // Skip if line is already a heading tag (h1-h6)
-            string trimmedLine = captionLine.TrimStart();
-            if (Regex.IsMatch(trimmedLine, @"^<h[1-6]"))
-                return;
-
             // Skip if line is already wrapped in other block elements that shouldn't be nested
-            if (Regex.IsMatch(trimmedLine, @"^<(div|table|ul|ol|pre|blockquote)"))
+            if (Regex.IsMatch(captionLine, @"^<(div|table|ul|ol|pre|blockquote)"))
                 return;
 
             // Skip lines ending with <br></p> as they indicate an empty line was present in the original markdown

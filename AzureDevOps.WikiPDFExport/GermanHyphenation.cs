@@ -14,9 +14,10 @@ namespace azuredevops_export_wiki
     {
         private NHunspell.Hyphen _hyphenator;
         private readonly ILogger _logger;
+        // The blacklist defines words that should be ignored when determining line breaks.
         private readonly List<string> _blacklist = new List<string>
         {
-            "&copy;"
+            "&copy;" // No hyphenation, otherwise the copyright symbol would be rendered as plain text
         };
 
 
