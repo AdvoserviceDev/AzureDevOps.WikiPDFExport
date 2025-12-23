@@ -48,16 +48,15 @@ namespace azuredevops_export_wiki
             int captionLineIndex = lines.Count - 1;
             string captionLine = lines[captionLineIndex];
 
-            // Skip empty lines and find the actual text line above the table
-            while (captionLineIndex >= 0 && string.IsNullOrWhiteSpace(captionLine))
+            // Skip auto-inserted empty line before table and check the actual text line above it
+            if (string.IsNullOrWhiteSpace(captionLine) && lines.Count > 1)
             {
-                captionLineIndex--;
-                if (captionLineIndex >= 0)
-                    captionLine = lines[captionLineIndex];
+                captionLineIndex = lines.Count - 2;
+                captionLine = lines[captionLineIndex];
             }
 
             // No valid caption line found
-            if (captionLineIndex < 0 || string.IsNullOrWhiteSpace(captionLine))
+            if (string.IsNullOrWhiteSpace(captionLine))
                 return;
 
             // Only wrap if the line doesn't already have the caption tag
@@ -71,6 +70,10 @@ namespace azuredevops_export_wiki
 
             // Skip if line is already wrapped in other block elements that shouldn't be nested
             if (Regex.IsMatch(trimmedLine, @"^<(div|table|ul|ol|pre|blockquote)"))
+                return;
+
+            // Skip lines ending with <br></p> as they indicate an empty line was present in the original markdown
+            if (captionLine.TrimEnd().EndsWith("<br></p>"))
                 return;
 
             // Wrap the line with table-caption span for CSS styling
