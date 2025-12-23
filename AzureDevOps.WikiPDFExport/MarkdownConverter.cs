@@ -175,6 +175,9 @@ namespace azuredevops_export_wiki
                 }
                 html = builder.ToString();
 
+                // Process HTML to add table captions
+                html = HtmlProcessor.InsertTableCaptions(html);
+
                 if (!string.IsNullOrEmpty(_options.GlobalTOC) && i == _options.GlobalTOCPosition)
                 {
                     html = RemoveDuplicatedHeadersFromGlobalTOC(html);

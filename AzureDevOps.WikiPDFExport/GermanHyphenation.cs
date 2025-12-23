@@ -14,6 +14,11 @@ namespace azuredevops_export_wiki
     {
         private NHunspell.Hyphen _hyphenator;
         private readonly ILogger _logger;
+        // The blacklist defines words that should be ignored when determining line breaks.
+        private readonly List<string> _blacklist = new List<string>
+        {
+            "&copy;" // No hyphenation, otherwise the copyright symbol would be rendered as plain text
+        };
 
 
         public GermanHyphenation(ILogger logger)
@@ -48,6 +53,11 @@ namespace azuredevops_export_wiki
             // Protect <style> and <script> blocks because they have text between their tags that must stay as-is
             List<string> blocks = new List<string>();
             html = Regex.Replace(html, @"<(style|script)[^>]*>.*?</\1>", m => { blocks.Add(m.Value); return $"___P{blocks.Count - 1}___"; }, RegexOptions.Singleline | RegexOptions.IgnoreCase);
+            // Protect blacklisted terms from hyphenation
+            foreach (var term in _blacklist)
+            {
+                html = Regex.Replace(html, Regex.Escape(term), m => { blocks.Add(m.Value); return $"___P{blocks.Count - 1}___"; }, RegexOptions.IgnoreCase);
+            }
             // Split by tags and hyphenate text content only
             StringBuilder result = new StringBuilder();
             foreach (string part in Regex.Split(html, @"(<[^>]+>)"))

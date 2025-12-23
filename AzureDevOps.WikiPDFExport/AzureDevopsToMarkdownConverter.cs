@@ -50,26 +50,20 @@ namespace azuredevops_export_wiki
                 // If the line starts with "|", it sets isInTable to true
                 if (line.StartsWith("|"))
                 {
-                    if (isInTable == false)
+                    if (!isInTable)
                     {
-                        processedLines.Add(""); // Inserts an empty line before the start of a table to ensure that tables without a preceding empty line are also recognized as tables.
+                        // Insert empty line before table so Markdown parsers recognize the table
+                        processedLines.Add("");
+                        isInTable = true;
                     }
-                    isInTable = true;
                 }
-                // If the line no longer starts with "|", and is not empty or whitespace, it sets isInTable to false
                 else if (isInTable && !line.StartsWith("|") && !string.IsNullOrWhiteSpace(line))
                 {
                     isInTable = false;
                 }
 
-                // Determine if we should add a <br> tag
-                bool shouldAddBreak =
-                    !isInCodeBlock && // code blocks should not get line breaks because they would break the code block structure
-                    !isInTable && // tables should not get line breaks because they would break the table structure
-                    !string.IsNullOrWhiteSpace(line) && // empty lines should not get line breaks to avoid to large empty space
-                    !line.Contains("[TOC]"); // table of content should not get line breaks because to avoid broken br tags
-
-                if (shouldAddBreak)
+                // Add <br> tags for Azure DevOps line break compatibility
+                if (ShouldAddLineBreak(line, nextLine, isInCodeBlock, isInTable))
                 {
                     line += "<br>";
                 }
@@ -78,6 +72,18 @@ namespace azuredevops_export_wiki
             }
 
             return string.Join("\n", processedLines);
+        }
+
+        /// <summary>
+        /// Determines if a <br> tag should be added for Azure DevOps markdown compatibility.
+        /// </summary>
+        private static bool ShouldAddLineBreak(string line, string nextLine, bool isInCodeBlock, bool isInTable)
+        {
+            return !isInCodeBlock && // Code blocks would break
+                   !isInTable && // Table structure would break
+                   !string.IsNullOrWhiteSpace(line) && // Avoid excessive spacing
+                   !line.Contains("[TOC]") && // TOC would break
+                   !(nextLine.StartsWith("|") && !isInTable); // Don't break table captions
         }
     }
 }
