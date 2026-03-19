@@ -388,7 +388,7 @@ namespace azuredevops_export_wiki
                 if (link.Url != null)
                 {
                     // Embed images with external Azure DevOps URL as Base64, since Puppeteer cannot load authenticated external URLs
-                    if (link.IsImage && link.Url.StartsWith("https://") && link.Url.Contains("/.attachments"))
+                    if (link.IsImage && link.Url.StartsWith("https://") && (link.Url.Contains("/.attachments") || link.Url.Contains("/attachments/")))
                     {
                         EmbedExternalAzureDevOpsImage(link);
                     }
