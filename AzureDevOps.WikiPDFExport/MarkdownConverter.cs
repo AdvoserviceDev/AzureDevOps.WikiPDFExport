@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
@@ -24,12 +25,21 @@ namespace azuredevops_export_wiki
         private readonly ILogger _logger;
         private readonly Options _options;
         private readonly ExportedWikiDoc _wiki;
+        private readonly HttpClient _httpClient;
 
         internal MarkdownConverter(ExportedWikiDoc wiki, Options options, ILogger logger)
         {
             _wiki = wiki;
             _options = options;
             _logger = logger;
+
+            // Set PAT as Basic Auth header for downloading authenticated Azure DevOps images
+            _httpClient = new HttpClient();
+            if (!string.IsNullOrEmpty(_options.AzureDevopsPAT))
+            {
+                var token = Convert.ToBase64String(System.Text.Encoding.ASCII.GetBytes($":{_options.AzureDevopsPAT}"));
+                _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", token);
+            }
         }
 
         internal string ConvertToHTML(IList<MarkdownFile> files)
@@ -377,7 +387,12 @@ namespace azuredevops_export_wiki
             {
                 if (link.Url != null)
                 {
-                    if (!link.Url.StartsWith("http"))
+                    // Embed images with external Azure DevOps URL as Base64, since Puppeteer cannot load authenticated external URLs
+                    if (link.IsImage && link.Url.StartsWith("https://") && link.Url.Contains("/.attachments"))
+                    {
+                        EmbedExternalAzureDevOpsImage(link);
+                    }
+                    else if (!link.Url.StartsWith("http"))
                     {
                         string absPath = null;
                         string anchor = null;
@@ -484,6 +499,39 @@ namespace azuredevops_export_wiki
         public void Log(string msg, LogLevel logLevel = LogLevel.Information, int indent = 0)
         {
             _logger.Log(msg, logLevel, indent);
+        }
+
+        /// <summary>
+        /// Downloads an externally linked Azure DevOps image and embeds it as Base64 so Puppeteer can render it in the PDF.
+        /// </summary>
+        /// <param name="link">The Markdown image link with an external Azure DevOps URL</param>
+        private void EmbedExternalAzureDevOpsImage(LinkInline link)
+        {
+            try
+            {
+                Log($"Downloading external Azure DevOps image: {link.Url}", LogLevel.Information, 2);
+
+                var imageBytes = _httpClient.GetByteArrayAsync(link.Url).GetAwaiter().GetResult();
+
+                // Extract file extension from URL before query string. Defaukt is png.
+                var urlPath = link.Url.Split('?')[0];
+                var ext = Path.GetExtension(urlPath).TrimStart('.').ToLower();
+                if (string.IsNullOrEmpty(ext))
+                {
+                    ext = "png";
+                }
+
+                // Build Base64 data URL so Puppeteer can render it without external requests. svg needs special mime type.
+                var mimeType = ext == "svg" ? "svg+xml" : ext;
+                var base64 = Convert.ToBase64String(imageBytes);
+                link.Url = $"data:image/{mimeType};base64,{base64}";
+
+                Log($"Successfully embedded image as base64", LogLevel.Information, 2);
+            }
+            catch (Exception ex)
+            {
+                Log($"Failed to download image: {link.Url} - {ex.Message}", LogLevel.Warning, 2);
+            }
         }
     }
 }
