@@ -37,7 +37,7 @@ namespace azuredevops_export_wiki
             _httpClient = new HttpClient();
             if (!string.IsNullOrEmpty(_options.AzureDevopsPAT))
             {
-                var token = Convert.ToBase64String(System.Text.Encoding.ASCII.GetBytes($":{_options.AzureDevopsPAT}"));
+                string token = Convert.ToBase64String(System.Text.Encoding.ASCII.GetBytes($":{_options.AzureDevopsPAT}"));
                 _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", token);
             }
         }
@@ -511,19 +511,19 @@ namespace azuredevops_export_wiki
             {
                 Log($"Downloading external Azure DevOps image: {link.Url}", LogLevel.Information, 2);
 
-                var imageBytes = _httpClient.GetByteArrayAsync(link.Url).GetAwaiter().GetResult();
+                byte[] imageBytes = _httpClient.GetByteArrayAsync(link.Url).GetAwaiter().GetResult();
 
                 // Extract file extension from URL before query string. Defaukt is png.
-                var urlPath = link.Url.Split('?')[0];
-                var ext = Path.GetExtension(urlPath).TrimStart('.').ToLower();
+                string urlPath = link.Url.Split('?')[0];
+                string ext = Path.GetExtension(urlPath).TrimStart('.').ToLower();
                 if (string.IsNullOrEmpty(ext))
                 {
                     ext = "png";
                 }
 
                 // Build Base64 data URL so Puppeteer can render it without external requests. svg needs special mime type.
-                var mimeType = ext == "svg" ? "svg+xml" : ext;
-                var base64 = Convert.ToBase64String(imageBytes);
+                string mimeType = ext == "svg" ? "svg+xml" : ext;
+                string base64 = Convert.ToBase64String(imageBytes);
                 link.Url = $"data:image/{mimeType};base64,{base64}";
 
                 Log($"Successfully embedded image as base64", LogLevel.Information, 2);
