@@ -28,6 +28,10 @@ namespace azuredevops_export_wiki
             if (singleFilePath.EndsWith(".md", true, System.Globalization.CultureInfo.InvariantCulture))
             {
                 var fileInfo = new FileInfo(singleFilePath);
+                if (!fileInfo.Exists)
+                {
+                    fileInfo = new FileInfo(RepairGermanUmlaut(singleFilePath));
+                }
                 var file  = new MarkdownFile(fileInfo, "", 0, Path.GetRelativePath(wikiPath, fileInfo.FullName));
                 return new List<MarkdownFile>() { file };
             }
@@ -58,5 +62,16 @@ namespace azuredevops_export_wiki
             return result;
         }
 
+        private static string RepairGermanUmlaut(string value)
+        {
+            return value
+                .Replace("├ñ", "ä")
+                .Replace("├Â", "ö")
+                .Replace("├╝", "ü")
+                .Replace("├ä", "Ä")
+                .Replace("├û", "Ö")
+                .Replace("├£", "Ü")
+                .Replace("├ƒ", "ß");
+        }
     }
 }
