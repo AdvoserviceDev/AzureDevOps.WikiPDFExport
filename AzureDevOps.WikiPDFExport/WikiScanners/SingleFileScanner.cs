@@ -28,6 +28,18 @@ namespace azuredevops_export_wiki
             if (singleFilePath.EndsWith(".md", true, System.Globalization.CultureInfo.InvariantCulture))
             {
                 var fileInfo = new FileInfo(singleFilePath);
+                if (!fileInfo.Exists)
+                {
+                    var repairedPath = AzureDevopsToMarkdownConverter.TryRepairUtf8Mojibake(singleFilePath);
+                    if (!string.IsNullOrEmpty(repairedPath))
+                    {
+                        fileInfo = new FileInfo(repairedPath);
+                    }
+                }
+                if (!fileInfo.Exists)
+                {
+                    throw new FileNotFoundException($"The specified Markdown file was not found: {singleFilePath}", singleFilePath);
+                }
                 var file  = new MarkdownFile(fileInfo, "", 0, Path.GetRelativePath(wikiPath, fileInfo.FullName));
                 return new List<MarkdownFile>() { file };
             }
