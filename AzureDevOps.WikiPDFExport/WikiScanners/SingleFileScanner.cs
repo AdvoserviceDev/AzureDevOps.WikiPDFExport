@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace azuredevops_export_wiki
 {
@@ -25,12 +26,20 @@ namespace azuredevops_export_wiki
             var allFiles = base.Scan(); 
 
             //handle the case that we have a single file only by providing a .md file in the -s parameter
-            if (singleFilePath.EndsWith(".md", true, System.Globalization.CultureInfo.InvariantCulture))
+            if (singleFilePath.EndsWith(".md", StringComparison.InvariantCultureIgnoreCase))
             {
                 var fileInfo = new FileInfo(singleFilePath);
                 if (!fileInfo.Exists)
                 {
-                    fileInfo = new FileInfo(RepairGermanUmlaut(singleFilePath));
+                    var repairedPath = TryRepairUtf8Mojibake(singleFilePath);
+                    if (!string.IsNullOrEmpty(repairedPath))
+                    {
+                        fileInfo = new FileInfo(repairedPath);
+                    }
+                }
+                if (!fileInfo.Exists)
+                {
+                    throw new FileNotFoundException($"The specified Markdown file was not found: {singleFilePath}", singleFilePath);
                 }
                 var file  = new MarkdownFile(fileInfo, "", 0, Path.GetRelativePath(wikiPath, fileInfo.FullName));
                 return new List<MarkdownFile>() { file };
@@ -62,16 +71,18 @@ namespace azuredevops_export_wiki
             return result;
         }
 
-        private static string RepairGermanUmlaut(string value)
+        private static string TryRepairUtf8Mojibake(string value)
         {
-            return value
-                .Replace("├ñ", "ä")
-                .Replace("├Â", "ö")
-                .Replace("├╝", "ü")
-                .Replace("├ä", "Ä")
-                .Replace("├û", "Ö")
-                .Replace("├£", "Ü")
-                .Replace("├ƒ", "ß");
+            try
+            {
+                var bytes = Console.InputEncoding.GetBytes(value);
+                var repaired = new UTF8Encoding(false, true).GetString(bytes);
+                return repaired == value ? null : repaired;
+            }
+            catch
+            {
+                return null;
+            }
         }
     }
 }
