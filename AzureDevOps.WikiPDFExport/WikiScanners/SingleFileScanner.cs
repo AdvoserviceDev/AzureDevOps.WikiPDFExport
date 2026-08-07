@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 
 namespace azuredevops_export_wiki
 {
@@ -26,12 +25,12 @@ namespace azuredevops_export_wiki
             var allFiles = base.Scan(); 
 
             //handle the case that we have a single file only by providing a .md file in the -s parameter
-            if (singleFilePath.EndsWith(".md", StringComparison.InvariantCultureIgnoreCase))
+            if (singleFilePath.EndsWith(".md", true, System.Globalization.CultureInfo.InvariantCulture))
             {
                 var fileInfo = new FileInfo(singleFilePath);
                 if (!fileInfo.Exists)
                 {
-                    var repairedPath = TryRepairUtf8Mojibake(singleFilePath);
+                    var repairedPath = AzureDevopsToMarkdownConverter.TryRepairUtf8Mojibake(singleFilePath);
                     if (!string.IsNullOrEmpty(repairedPath))
                     {
                         fileInfo = new FileInfo(repairedPath);
@@ -71,18 +70,5 @@ namespace azuredevops_export_wiki
             return result;
         }
 
-        private static string TryRepairUtf8Mojibake(string value)
-        {
-            try
-            {
-                var bytes = Console.InputEncoding.GetBytes(value);
-                var repaired = new UTF8Encoding(false, true).GetString(bytes);
-                return repaired == value ? null : repaired;
-            }
-            catch
-            {
-                return null;
-            }
-        }
     }
 }

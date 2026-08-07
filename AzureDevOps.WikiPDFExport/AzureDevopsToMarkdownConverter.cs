@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -84,6 +85,24 @@ namespace azuredevops_export_wiki
                    !string.IsNullOrWhiteSpace(line) && // Avoid excessive spacing
                    !line.Contains("[TOC]") && // TOC would break
                    !(nextLine.StartsWith("|") && !isInTable); // Don't break table captions
+        }
+
+        /// <summary>
+        /// Versucht, fehlerhaft dekodierte UTF-8-Zeichen zu reparieren.
+        /// </summary>
+        /// <returns>Reparierter Wert oder <c>null</c>, wenn keine Reparatur möglich ist.</returns>
+        internal static string TryRepairUtf8Mojibake(string value)
+        {
+            try
+            {
+                var bytes = Console.InputEncoding.GetBytes(value);
+                var repaired = new UTF8Encoding(false, true).GetString(bytes);
+                return repaired == value ? null : repaired;
+            }
+            catch
+            {
+                return null;
+            }
         }
     }
 }

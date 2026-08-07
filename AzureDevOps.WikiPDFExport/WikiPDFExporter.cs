@@ -97,6 +97,12 @@ namespace azuredevops_export_wiki
             bool succeeded = true;
             try
             {
+                var repairedOutput = AzureDevopsToMarkdownConverter.TryRepairUtf8Mojibake(_options.Output);
+                if (!string.IsNullOrEmpty(repairedOutput))
+                {
+                    _options.Output = repairedOutput;
+                }
+
                 using (var operation = _telemetryClient.StartOperation<RequestTelemetry>("export"))
                 {
                     var timer = Stopwatch.StartNew();
